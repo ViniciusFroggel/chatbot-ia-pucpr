@@ -1,5 +1,7 @@
 # ChatbotIA
 
+![CI](https://github.com/ViniciusFroggel/chatbot-ia-pucpr/actions/workflows/ci.yml/badge.svg)
+
 Backend de um chatbot de suporte de TI, construído em ASP.NET Core 8 seguindo os princípios da
 Clean Architecture. Usuários se autenticam via JWT e podem enviar perguntas para um assistente de
 IA, que responde e classifica automaticamente o assunto (rede, impressora, acesso, hardware,
