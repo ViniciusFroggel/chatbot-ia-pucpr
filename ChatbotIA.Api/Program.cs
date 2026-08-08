@@ -95,4 +95,11 @@ app.UseAuthorization();
 
 app.MapControllers();
 
+app.MapGet("/", () => Results.Ok(new
+{
+    status = "ok",
+    service = "ChatbotIA API",
+    docs = "/swagger"
+}));
+
 app.Run();
