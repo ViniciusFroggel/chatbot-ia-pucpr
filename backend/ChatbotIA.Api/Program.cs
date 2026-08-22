@@ -71,7 +71,9 @@ builder.Services.AddAuthorization();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
-        policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .WithHeaders("Content-Type", "Authorization"));
 });
 
 var app = builder.Build();
