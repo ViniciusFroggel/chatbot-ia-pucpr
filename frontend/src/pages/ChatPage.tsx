@@ -5,6 +5,7 @@ import { api, ApiRequestError } from "../lib/api";
 import type { Atendimento } from "../lib/types";
 import { AiBubble, TypingBubble, UserBubble } from "../components/ChatBubble";
 import { CategoryBadge } from "../components/CategoryBadge";
+import { WakingBanner } from "../components/WakingBanner";
 
 function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
@@ -24,6 +25,7 @@ export function ChatPage() {
   const [carregandoHistorico, setCarregandoHistorico] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [pendente, setPendente] = useState<string | null>(null);
+  const [acordando, setAcordando] = useState<{ attempt: number; max: number } | null>(null);
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -33,9 +35,15 @@ export function ChatPage() {
       return;
     }
     api
-      .listarAtendimentos(token)
-      .then((data) => setHistorico([...data].reverse()))
-      .catch(() => setErro("Não foi possível carregar o histórico."))
+      .listarAtendimentos(token, (attempt, max) => setAcordando({ attempt, max }))
+      .then((data) => {
+        setHistorico([...data].reverse());
+        setAcordando(null);
+      })
+      .catch(() => {
+        setErro("Não foi possível carregar o histórico.");
+        setAcordando(null);
+      })
       .finally(() => setCarregandoHistorico(false));
   }, [token, navigate]);
 
@@ -52,9 +60,12 @@ export function ChatPage() {
     setPendente(perguntaEnviada);
     setEnviando(true);
     setErro(null);
+    setAcordando(null);
 
     try {
-      const atendimento = await api.perguntar(perguntaEnviada, token);
+      const atendimento = await api.perguntar(perguntaEnviada, token, (attempt, max) =>
+        setAcordando({ attempt, max })
+      );
       setHistorico((prev) => [...prev, atendimento]);
     } catch (err) {
       setErro(
@@ -64,6 +75,7 @@ export function ChatPage() {
       );
       setPergunta(perguntaEnviada);
     } finally {
+      setAcordando(null);
       setPendente(null);
       setEnviando(false);
     }
@@ -95,7 +107,7 @@ export function ChatPage() {
             Histórico {historico.length > 0 && <span>· {historico.length}</span>}
           </p>
 
-          {carregandoHistorico && <p className="sidebar__empty">Carregando…</p>}
+          {carregandoHistorico && !acordando && <p className="sidebar__empty">Carregando…</p>}
 
           {!carregandoHistorico && historico.length === 0 && (
             <p className="sidebar__empty">
@@ -132,8 +144,10 @@ export function ChatPage() {
       </aside>
 
       <main className="chat-main">
+        {acordando && <WakingBanner attempt={acordando.attempt} max={acordando.max} />}
+
         <div className="chat-scroll" ref={scrollRef}>
-          {!carregandoHistorico && historico.length === 0 && !pendente && (
+          {!carregandoHistorico && historico.length === 0 && !pendente && !acordando && (
             <div className="chat-empty">
               <span className="chat-empty__icon">▤</span>
               <h2>Como posso ajudar hoje?</h2>

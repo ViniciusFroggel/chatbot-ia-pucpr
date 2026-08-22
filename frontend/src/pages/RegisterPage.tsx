@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthLayout } from "../components/AuthLayout";
+import { WakingBanner } from "../components/WakingBanner";
 import { api, ApiRequestError } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 
@@ -12,6 +13,7 @@ export function RegisterPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [acordando, setAcordando] = useState<{ attempt: number; max: number } | null>(null);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -22,14 +24,18 @@ export function RegisterPage() {
       return;
     }
 
+    setAcordando(null);
     setLoading(true);
     try {
-      const auth = await api.register(name, email, password);
+      const auth = await api.register(name, email, password, (attempt, max) =>
+        setAcordando({ attempt, max })
+      );
       setSession(auth);
       navigate("/chat");
     } catch (err) {
       setError(err instanceof ApiRequestError ? err.message : "Não foi possível criar a conta. Tente novamente.");
     } finally {
+      setAcordando(null);
       setLoading(false);
     }
   }
@@ -73,6 +79,7 @@ export function RegisterPage() {
           />
         </label>
 
+        {acordando && <WakingBanner attempt={acordando.attempt} max={acordando.max} />}
         {error && <p className="form-error">{error}</p>}
 
         <button type="submit" className="btn btn--primary" disabled={loading}>
